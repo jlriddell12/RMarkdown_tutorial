@@ -1,0 +1,134 @@
+---
+title: "RMarkdown Tutorial"
+author: "Jill Riddell"
+date: '2018-11-28'
+output:
+  word_document: default
+  html_document: default
+toc: yes
+---
+## Introduction and Purpose
+The purpose of R Markdown is to generate easily readable and executable reports of code that make it simple and straightforward for others to reproduce your work. R Markdown files (.RMD) can be saved as html files, PDF's, slideshows, and MS Word documents among others. These formats have different  uses depending on the audience.
+
+### Uses of Different File Types
+1. html output and .Rmd
+The html output and .Rmd file is often most useful when sharing code with other scientists and researchers; it allows others to easily replicate, modify, and/or execute the code. Consider using this format for data reproducibility and accountability. This form can also act as your "digital lab notebook" and be a record of your data manipulation. 
+
+1. Word documents and PDF's
+These output formats can be most useful for teaching or presenting results. For example, a scientist working for a consulting firm may export their coding results for long-term environmental monitoring data as a PDF because the client only cares about the results, not necessarily the code used to obtain the results. However, in the case of R workshops and classes, word documents may be more useful as it allows students to take notes more efficiently.
+
+## Opening R Markdown
+To open a new .Rmd file open R studio and click File -> New File -> R Markdown; an untitled .Rmd file will be opened and the following example and introduction appear:
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+### Code Chunking
+
+In R markdown code is written in chunks. This allows the author or other user to run sections of code from the file. Chunks are usually named according to the output of the code and to make it easy to navigate and use different parts of a code. Chunks can be inserted into a .Rmd filein three ways:
+
+1. By manually typing ```{r} and closing with ```
+1. Using the keyboard shortcut cmd/ctrl + shift + enter
+1. Or using the "insert" button in the editor toolbar.
+
+Several options exist for code chunking and it's output in the final file. Some examples include: eval = FALSE, which prevents the code from being run and is useful for displaying examples; message = FALSE, which does not allow error messages or warnings to appear; echo = FALSE, only allows the results to be printed in the final final; include = FALSE, this runs the code but doesn't show it in the final output.
+
+## An Example
+
+The following code is to evaluate a statistical model for diel behavior of pH, temperature, and dissolved oxygen at a coal mine drainage stream.
+
+First, install necessary packages and read in the data.
+
+```{r prep}
+library(car) #install packages
+library(devtools)
+library(easyGgplot2)
+LRM050_1 <- read.csv("LRM_050_1_summer_raw_data.csv") #read in csv
+```
+
+Next, a fourier series will be added to the date to give a prediction of each value at time t and add these calculated values to the data frame
+
+```{r fourier calculation}
+pH050 <- lm(pH ~ sin(2*pi*DateTimeFormatExt)+cos(2*pi*DateTimeFormatExt),data=LRM050_1) #calculates a fitted value for pH at time t
+pHfitted <- pH050$fitted.values
+#creates a vector of the fitted values
+LRM050_1$pHfitted <- pHfitted
+#adds the vector to the data
+
+Temp050 <- lm(Temp ~ sin(2*pi*DateTimeFormatExt)+cos(2*pi*DateTimeFormatExt),data=LRM050_1)
+Tempfitted <- Temp050$fitted.values
+LRM050_1$Tempfitted <-Tempfitted
+
+ODO050 <- lm(ODO ~ sin(2*pi*DateTimeFormatExt)+cos(2*pi*DateTimeFormatExt),data=LRM050_1)
+ODOfitted <- ODO050$fitted.values
+LRM050_1$ODOfitted <- ODOfitted
+```
+
+Now, create plots that compare our raw data to our cosine model. 
+
+```{r plotting}
+pH050plot <- ggplot(LRM050_1, aes(x=DateTimeFormatExt, y=pHfitted))+
+  geom_line(col="red",lwd=0.5)+
+  geom_point(aes(y=pH), size=2.5)+
+  ggtitle("LRM050 Meter Data")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  labs(x=NULL, y="pH s.u.")
+
+Temp050plot <- ggplot(LRM050_1, aes(x=DateTimeFormatExt, y=Tempfitted))+
+  geom_line(col="red",lwd=0.5)+
+  geom_point(aes(y=Temp), size=2.5)+
+  labs(x=NULL, y="Temperature C")
+
+ODO050plot <- ggplot(LRM050_1, aes(x=DateTimeFormatExt, y=ODOfitted))+
+  geom_line(col="red",lwd=0.5)+
+  geom_point(aes(y=ODO), size=2.5)+
+  labs(x="Elapsed Time", y= "DO mg/L")
+
+ggplot2.multiplot(pH050plot,Temp050plot,ODO050plot, cols=1)
+```
+
+Finally, evaluate the statistical significance of the model to the data. Is this model a good predictor for our data?
+
+```{r stats}
+summary(pH050)
+outlierTest(pH050)
+
+summary(Temp050)
+outlierTest(Temp050)
+
+summary(ODO050)
+outlierTest(ODO050)
+```
+### Knitting
+
+Knitting is the file step in producing the final report. This sends the R markdown file to knitr which completes all executables in the markdown and then the selected output is processed by pandoc into the file type of the users choosing.
+
+### Some notes
+If this above code were going to be presented to a client or at a conference, it may be pertinent to include echol = FALSE and to knit the product as a PDF. For teaching purposes an html or word document may be more appropriate.
+
+## References and important links
+
+1. <https://r3ds.had.co.nz/r-markdown.html>
+1. <https://rmarkdown.rstudio.com>
+1. <https://bookdown.org/yihui/rmarkdown/>
